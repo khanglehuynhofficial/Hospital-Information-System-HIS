@@ -30,3 +30,4 @@ namespace HisEmrService.Services
         }
     }
 }
+// Check Poll SCM Automation
