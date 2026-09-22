@@ -11,7 +11,8 @@ pipeline {
     }
 
     environment {
-        GITHUB_REPO = 'https://github.com'
+        // ĐÃ ĐIỀN ĐẦY ĐỦ: Đường dẫn chi tiết kho chứa GitHub của Khang
+        GITHUB_REPO = 'https://github.com/khanglehuynhofficial/Hospital-Information-System-HIS'
         CREDENTIALS_ID = 'his-github-auth'
         SCANNER_HOME = tool 'SonarQubeScanner'
     }
