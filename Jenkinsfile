@@ -11,7 +11,7 @@ pipeline {
     }
 
     environment {
-        GITHUB_REPO = 'https://github.com/khanglehuynhofficial/Hospital-Information-System-HIS'
+        GITHUB_REPO = 'https://github.com'
         CREDENTIALS_ID = 'his-github-auth'
         SCANNER_HOME = tool 'SonarQubeScanner'
     }
@@ -31,7 +31,6 @@ pipeline {
         stage('2. Build & Compile') {
             steps {
                 echo '=== STEP 2: COMPILING SPRING BOOT APPLICATION ==='
-                // ĐÃ SỬA: Di chuyển vào đúng thư mục con chứa file pom.xml
                 dir('HisEmrService') {
                     sh 'mvn clean compile'
                 }
@@ -79,11 +78,10 @@ pipeline {
         }
     }
 
-        post {
+    post {
         success {
             echo '=== CI PIPELINE EXECUTED SUCCESSFULLY ==='
             script {
-                // Chỉ cần gọi hàm đơn giản, Jenkins tự áp URL Webhook đã cấu hình
                 slackSend(channel: '#his-alerts', color: 'good', message: "🟢 BÁO CÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] ĐÃ THÀNH CÔNG RỰC RỠ! Bộ quét tĩnh SonarQube đạt trạng thái Quality Gate Passed.")
             }
         }
@@ -91,10 +89,6 @@ pipeline {
             echo '=== CI PIPELINE FAILED AT SOME STAGES ==='
             script {
                 slackSend(channel: '#his-alerts', color: 'danger', message: "🔴 CẢNH BÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] BỊ THẤT BẠI tại Stage: ${env.STAGE_NAME}. Vui lòng đối soát lại nhật ký Console Output.")
-            }
-        }
-    }
-                )
             }
         }
     }
