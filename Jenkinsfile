@@ -46,6 +46,7 @@ pipeline {
                     tokenCredentialId: env.SLACK_CREDENTIALS_ID,
                     channel: env.SLACK_CHANNEL,
                     color: 'good',
+                    failOnError: false,
                     message: "🟢 BÁO CÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] đã thành công. SonarQube đã hoàn tất quét mã nguồn. ${env.BUILD_URL}"
                 )
             }
@@ -57,6 +58,7 @@ pipeline {
                     tokenCredentialId: env.SLACK_CREDENTIALS_ID,
                     channel: env.SLACK_CHANNEL,
                     color: 'danger',
+                    failOnError: false,
                     message: "🔴 CẢNH BÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] thất bại. Vui lòng đối soát Console Output. ${env.BUILD_URL}"
                 )
             }
