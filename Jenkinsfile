@@ -7,12 +7,10 @@ pipeline {
     }
 
     triggers {
-        // Cơ chế quét tự động kiểm tra code mới trên GitHub 1 phút / lần
         pollSCM('* * * * *')
     }
 
     environment {
-        
         GITHUB_REPO = 'https://github.com/khanglehuynhofficial/Hospital-Information-System-HIS'
         CREDENTIALS_ID = 'his-github-auth'
         SCANNER_HOME = tool 'SonarQubeScanner'
@@ -33,18 +31,25 @@ pipeline {
         stage('2. Build & Compile') {
             steps {
                 echo '=== STEP 2: COMPILING SPRING BOOT APPLICATION ==='
-                sh 'mvn clean compile'
+                // ĐÃ SỬA: Di chuyển vào đúng thư mục con chứa file pom.xml
+                dir('HisEmrService') {
+                    sh 'mvn clean compile'
+                }
             }
         }
 
         stage('3. Run Automated Unit Tests') {
             steps {
                 echo '=== STEP 3: EXECUTING UNIT TESTS & CODE COVERAGE ==='
-                sh 'mvn test'
+                dir('HisEmrService') {
+                    sh 'mvn test'
+                }
             }
             post {
                 always {
-                    junit '**/target/surefire-reports/*.xml'
+                    dir('HisEmrService') {
+                        junit '**/target/surefire-reports/*.xml'
+                    }
                 }
             }
         }
@@ -52,11 +57,13 @@ pipeline {
         stage('4. Static Code Analysis / Quality Gate') {
             steps {
                 echo '=== STEP 4: SCANNING CODE QUALITY WITH SONARQUBE ==='
-                withSonarQubeEnv('SonarQube-Server') {
-                    sh "${SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=HIS-Hospital-Information-System -Dsonar.sources=. -Dsonar.java.binaries=**/target/classes"
-                }
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                dir('HisEmrService') {
+                    withSonarQubeEnv('SonarQube-Server') {
+                        sh "${SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=HIS-Hospital-Information-System -Dsonar.sources=. -Dsonar.java.binaries=**/target/classes"
+                    }
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitForQualityGate abortPipeline: true
+                    }
                 }
             }
         }
@@ -64,8 +71,10 @@ pipeline {
         stage('5. Package Artifact') {
             steps {
                 echo '=== STEP 5: PACKAGING EXECUTABLE APPLICATION ARTIFACT ==='
-                sh 'mvn package -DskipTests'
-                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                dir('HisEmrService') {
+                    sh 'mvn package -DskipTests'
+                    archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                }
             }
         }
     }
@@ -74,7 +83,6 @@ pipeline {
         success {
             echo '=== CI PIPELINE EXECUTED SUCCESSFULLY ==='
             script {
-                // Tự động dội thông báo viền xanh lên Slack khi luồng chạy thông suốt thành công
                 slackSend(
                     tokenCredentialId: 'slack-token-secret',
                     channel: '#his-alerts',
@@ -86,7 +94,6 @@ pipeline {
         failure {
             echo '=== CI PIPELINE FAILED AT SOME STAGES ==='
             script {
-                // Tự động dội thông báo viền đỏ khi phát sinh lỗi sập luồng công việc
                 slackSend(
                     tokenCredentialId: 'slack-token-secret',
                     channel: '#his-alerts',
