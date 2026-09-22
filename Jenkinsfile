@@ -7,12 +7,13 @@ pipeline {
     }
 
     triggers {
-        // Kích hoạt cơ chế tự động quét kho chứa GitHub 1 phút một lần
+        // Cơ chế quét tự động kiểm tra code mới trên GitHub 1 phút / lần
         pollSCM('* * * * *')
     }
 
     environment {
-        GITHUB_REPO = 'https://github.com'
+        
+        GITHUB_REPO = 'https://github.com/khanglehuynhofficial/Hospital-Information-System-HIS'
         CREDENTIALS_ID = 'his-github-auth'
         SCANNER_HOME = tool 'SonarQubeScanner'
     }
@@ -73,7 +74,7 @@ pipeline {
         success {
             echo '=== CI PIPELINE EXECUTED SUCCESSFULLY ==='
             script {
-                // Sử dụng chính xác ID cấu hình slack-token-secret liên thông sang Slack
+                // Tự động dội thông báo viền xanh lên Slack khi luồng chạy thông suốt thành công
                 slackSend(
                     tokenCredentialId: 'slack-token-secret',
                     channel: '#his-alerts',
@@ -85,6 +86,7 @@ pipeline {
         failure {
             echo '=== CI PIPELINE FAILED AT SOME STAGES ==='
             script {
+                // Tự động dội thông báo viền đỏ khi phát sinh lỗi sập luồng công việc
                 slackSend(
                     tokenCredentialId: 'slack-token-secret',
                     channel: '#his-alerts',
