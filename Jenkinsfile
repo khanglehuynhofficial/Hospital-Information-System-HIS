@@ -9,11 +9,6 @@ pipeline {
         )
     }
 
-    triggers {
-        // Tự động quét kiểm tra mã nguồn từ GitHub 1 phút / lần
-        pollSCM('* * * * *')
-    }
-
     environment {
         GITHUB_REPO = 'https://github.com/khanglehuynhofficial/Hospital-Information-System-HIS.git'
         CREDENTIALS_ID = 'his-github-auth'
