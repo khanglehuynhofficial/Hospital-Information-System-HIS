@@ -9,11 +9,6 @@ pipeline {
         )
     }
 
-    triggers {
-        // Tự động quét kiểm tra mã nguồn từ GitHub 1 phút / lần
-        pollSCM('* * * * *')
-    }
-
     environment {
         GITHUB_REPO = 'https://github.com/khanglehuynhofficial/Hospital-Information-System-HIS.git'
         CREDENTIALS_ID = 'his-github-auth'
@@ -35,7 +30,15 @@ pipeline {
             }
         }
 
-        stage('2. Static Code Analysis') {
+        stage('2. Build .NET') {
+            steps {
+                echo '=== STEP 2: BUILDING .NET PROJECT ==='
+                sh 'dotnet restore HisEmrService/HisEmrService.csproj'
+                sh 'dotnet build HisEmrService/HisEmrService.csproj --configuration Release --no-restore'
+            }
+        }
+
+        stage('3. Static Code Analysis') {
             when {
                 expression { params.RUN_SONAR }
             }
