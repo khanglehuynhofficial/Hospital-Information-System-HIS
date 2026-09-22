@@ -14,7 +14,7 @@ pipeline {
         CREDENTIALS_ID = 'his-github-auth'
         SLACK_CREDENTIALS_ID = 'slack-token-secret'
         SLACK_CHANNEL = '#his-devops-alerts'
-        PATH+DOTNET = '/usr/share/dotnet'
+        PATH = '/usr/local/bin:/usr/bin:/bin:/usr/share/dotnet'
         // ÉP CỨNG ĐƯỜNG DẪN: Bảo đảm gọi trúng thư mục lõi đã cài đặt trên Ubuntu
         SCANNER_HOME = '/opt/sonar-scanner'
     }
