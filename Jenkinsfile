@@ -35,7 +35,15 @@ pipeline {
             }
         }
 
-        stage('2. Static Code Analysis') {
+        stage('2. Build .NET') {
+            steps {
+                echo '=== STEP 2: BUILDING .NET PROJECT ==='
+                sh 'dotnet restore HisEmrService/HisEmrService.csproj'
+                sh 'dotnet build HisEmrService/HisEmrService.csproj --configuration Release --no-restore'
+            }
+        }
+
+        stage('3. Static Code Analysis') {
             when {
                 expression { params.RUN_SONAR }
             }
