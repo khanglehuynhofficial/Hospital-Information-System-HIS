@@ -1,6 +1,14 @@
 pipeline {
     agent any
 
+    parameters {
+        booleanParam(
+            name: 'RUN_SONAR',
+            defaultValue: false,
+            description: 'Enable SonarQube analysis after the SonarQube-Server installation is configured in Jenkins.'
+        )
+    }
+
     triggers {
         // Tự động quét kiểm tra mã nguồn từ GitHub 1 phút / lần
         pollSCM('* * * * *')
@@ -27,7 +35,10 @@ pipeline {
             }
         }
 
-        stage('2. Static Code Analysis / Quality Gate') {
+        stage('2. Static Code Analysis') {
+            when {
+                expression { params.RUN_SONAR }
+            }
             steps {
                 echo '=== STEP 2: SCANNING CODE QUALITY WITH SONARQUBE ==='
                 withSonarQubeEnv('SonarQube-Server') {
