@@ -14,8 +14,6 @@ pipeline {
         CREDENTIALS_ID = 'his-github-auth'
         SLACK_CREDENTIALS_ID = 'slack-token-secret'
         SLACK_CHANNEL = '#his-devops-alerts'
-        PATH = '/usr/local/bin:/usr/bin:/bin:/usr/share/dotnet'
-        // ÉP CỨNG ĐƯỜNG DẪN: Bảo đảm gọi trúng thư mục lõi đã cài đặt trên Ubuntu
         SCANNER_HOME = '/opt/sonar-scanner'
     }
 
@@ -36,18 +34,22 @@ pipeline {
                 echo '=== STEP 2: BUILDING .NET PROJECT ==='
                 sh '''
                     set -eu
-                    DOTNET_BIN="$(command -v dotnet || true)"
-                    if [ -z "$DOTNET_BIN" ] && [ -x /usr/share/dotnet/dotnet ]; then
-                        DOTNET_BIN=/usr/share/dotnet/dotnet
-                    fi
-                    if [ -z "$DOTNET_BIN" ]; then
-                        echo 'ERROR: .NET SDK was not found on the Jenkins agent.'
-                        echo 'Install the .NET 8 SDK or configure the agent PATH before running this job.'
-                        exit 127
-                    fi
-                    "$DOTNET_BIN" --version
-                    "$DOTNET_BIN" restore HisEmrService/HisEmrService.csproj
-                    "$DOTNET_BIN" build HisEmrService/HisEmrService.csproj --configuration Release --no-restore
+                    command -v docker >/dev/null 2>&1
+                    docker run --rm \
+                        -v "$PWD:/src" \
+                        -w /src \
+                        mcr.microsoft.com/dotnet/sdk:8.0 \
+                        dotnet --version
+                    docker run --rm \
+                        -v "$PWD:/src" \
+                        -w /src \
+                        mcr.microsoft.com/dotnet/sdk:8.0 \
+                        dotnet restore HisEmrService/HisEmrService.csproj
+                    docker run --rm \
+                        -v "$PWD:/src" \
+                        -w /src \
+                        mcr.microsoft.com/dotnet/sdk:8.0 \
+                        dotnet build HisEmrService/HisEmrService.csproj --configuration Release --no-restore
                 '''
             }
         }
