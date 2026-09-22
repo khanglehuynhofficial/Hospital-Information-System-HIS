@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'mcr.microsoft.com/dotnet/sdk:8.0'
-            reuseNode true
-        }
-    }
+    agent any
 
     parameters {
         booleanParam(
@@ -37,9 +32,25 @@ pipeline {
         stage('2. Build .NET') {
             steps {
                 echo '=== STEP 2: BUILDING .NET PROJECT ==='
-                sh 'dotnet --version'
-                sh 'dotnet restore HisEmrService/HisEmrService.csproj'
-                sh 'dotnet build HisEmrService/HisEmrService.csproj --configuration Release --no-restore'
+                sh '''
+                    set -eu
+                    command -v docker >/dev/null 2>&1
+                    docker run --rm \
+                        -v "$PWD:/src" \
+                        -w /src \
+                        mcr.microsoft.com/dotnet/sdk:8.0 \
+                        dotnet --version
+                    docker run --rm \
+                        -v "$PWD:/src" \
+                        -w /src \
+                        mcr.microsoft.com/dotnet/sdk:8.0 \
+                        dotnet restore HisEmrService/HisEmrService.csproj
+                    docker run --rm \
+                        -v "$PWD:/src" \
+                        -w /src \
+                        mcr.microsoft.com/dotnet/sdk:8.0 \
+                        dotnet build HisEmrService/HisEmrService.csproj --configuration Release --no-restore
+                '''
             }
         }
 
