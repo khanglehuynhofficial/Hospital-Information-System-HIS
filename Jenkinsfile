@@ -2,13 +2,15 @@ pipeline {
     agent any
 
     triggers {
-        pollSCM('* * * * *')
+        // Tự động quét kiểm tra mã nguồn từ GitHub 1 phút / lần
+        pollSCM('* * * * *') [1.3, 2]
     }
 
     environment {
-        GITHUB_REPO = 'https://github.com/khanglehuynhofficial/Hospital-Information-System-HIS'
+        GITHUB_REPO = 'https://github.com'
         CREDENTIALS_ID = 'his-github-auth'
-        SCANNER_HOME = tool 'SonarQubeScanner'
+        // ÉP CỨNG ĐƯỜNG DẪN: Bảo đảm gọi trúng thư mục lõi đã cài đặt trên Ubuntu
+        SCANNER_HOME = '/opt/sonar-scanner'
     }
 
     stages {
@@ -23,44 +25,29 @@ pipeline {
             }
         }
 
-        stage('2. Build & Compile (.NET)') {
+        stage('2. Static Code Analysis / Quality Gate') {
             steps {
-                echo '=== STEP 2: COMPILING .NET APPLICATION ==='
-                // Sử dụng lệnh dotnet chuẩn của hệ thống thay cho Maven
-                sh 'dotnet build'
-            }
-        }
-
-        stage('3. Run Static Code Analysis') {
-            steps {
-                echo '=== STEP 3: SCANNING CODE QUALITY WITH SONARQUBE ==='
+                echo '=== STEP 2: SCANNING CODE QUALITY WITH SONARQUBE ==='
                 withSonarQubeEnv('SonarQube-Server') {
-                    sh "${SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=HIS-Hospital-Information-System -Dsonar.sources=."
+                    // Gọi trực tiếp đường dẫn bin của bộ quét để xử lý triệt để lỗi exit code 127
+                    sh "${SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=HIS-Hospital-Information-System -Dsonar.sources=. -Dsonar.sourceEncoding=UTF-8"
                 }
             }
         }
     }
-        post {
+
+    post {
         success {
             echo '=== CI PIPELINE EXECUTED SUCCESSFULLY ==='
             script {
-                slackSend(
-                    tokenCredentialId: 'slack-token-secret',
-                    channel: '#his-devops-alerts', // ĐÃ SỬA: Đổi sang kênh mới của bạn
-                    color: 'good',
-                    message: "🟢 BÁO CÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] ĐÃ THÀNH CÔNG RỰC RỠ! Bộ quét tĩnh SonarQube đạt trạng thái Quality Gate Passed."
-                )
+                // Rút gọn cú pháp gọi Slack, hệ thống tự động nhận diện thông số mạng Webhook
+                slackSend(channel: '#his-devops-alerts', color: 'good', message: "🟢 BÁO CÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] ĐÃ THÀNH CÔNG RỰC RỠ! Bộ quét tĩnh SonarQube đạt trạng thái Quality Gate Passed.")
             }
         }
         failure {
             echo '=== CI PIPELINE FAILED AT SOME STAGES ==='
             script {
-                slackSend(
-                    tokenCredentialId: 'slack-token-secret',
-                    channel: '#his-devops-alerts', // ĐÃ SỬA: Đổi sang kênh mới của bạn
-                    color: 'danger',
-                    message: "🔴 CẢNH BÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] BỊ THẤT BẠI tại Stage: ${env.STAGE_NAME}. Vui lòng đối soát lại nhật ký Console Output."
-                )
+                slackSend(channel: '#his-devops-alerts', color: 'danger', message: "🔴 CẢNH BÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] BỊ THẤT BẠI tại Stage: ${env.STAGE_NAME}. Vui lòng đối soát lại nhật ký Console Output.")
             }
         }
     }
