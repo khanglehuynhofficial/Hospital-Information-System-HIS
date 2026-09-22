@@ -34,22 +34,27 @@ pipeline {
                 echo '=== STEP 2: BUILDING .NET PROJECT ==='
                 sh '''
                     set -eu
-                    command -v docker >/dev/null 2>&1
-                    docker run --rm \
-                        -v "$PWD:/src" \
-                        -w /src \
-                        mcr.microsoft.com/dotnet/sdk:8.0 \
+                    if command -v dotnet >/dev/null 2>&1; then
+                        echo 'Using the .NET SDK installed on the Jenkins agent.'
                         dotnet --version
-                    docker run --rm \
-                        -v "$PWD:/src" \
-                        -w /src \
-                        mcr.microsoft.com/dotnet/sdk:8.0 \
                         dotnet restore HisEmrService/HisEmrService.csproj
-                    docker run --rm \
-                        -v "$PWD:/src" \
-                        -w /src \
-                        mcr.microsoft.com/dotnet/sdk:8.0 \
                         dotnet build HisEmrService/HisEmrService.csproj --configuration Release --no-restore
+                    elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                        echo 'Using the .NET 8 SDK Docker image.'
+                        docker run --rm \
+                            -v "$PWD:/src" \
+                            -w /src \
+                            mcr.microsoft.com/dotnet/sdk:8.0 \
+                            dotnet restore HisEmrService/HisEmrService.csproj
+                        docker run --rm \
+                            -v "$PWD:/src" \
+                            -w /src \
+                            mcr.microsoft.com/dotnet/sdk:8.0 \
+                            dotnet build HisEmrService/HisEmrService.csproj --configuration Release --no-restore
+                    else
+                        echo 'ERROR: Jenkins agent has neither dotnet nor a usable Docker daemon.'
+                        exit 127
+                    fi
                 '''
             }
         }
@@ -77,7 +82,7 @@ pipeline {
                     channel: env.SLACK_CHANNEL,
                     color: 'good',
                     failOnError: false,
-                    message: "🟢 BÁO CÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] đã thành công. SonarQube đã hoàn tất quét mã nguồn. ${env.BUILD_URL}"
+                    message: "🟢 BÁO CÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] đã thành công. ${env.BUILD_URL}"
                 )
             }
         }
