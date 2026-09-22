@@ -3,12 +3,14 @@ pipeline {
 
     triggers {
         // Tự động quét kiểm tra mã nguồn từ GitHub 1 phút / lần
-        pollSCM('* * * * *') [1.3, 2]
+        pollSCM('* * * * *')
     }
 
     environment {
-        GITHUB_REPO = 'https://github.com'
+        GITHUB_REPO = 'https://github.com/khanglehuynhofficial/Hospital-Information-System-HIS.git'
         CREDENTIALS_ID = 'his-github-auth'
+        SLACK_CREDENTIALS_ID = 'slack-token-secret'
+        SLACK_CHANNEL = '#his-devops-alerts'
         // ÉP CỨNG ĐƯỜNG DẪN: Bảo đảm gọi trúng thư mục lõi đã cài đặt trên Ubuntu
         SCANNER_HOME = '/opt/sonar-scanner'
     }
@@ -40,14 +42,23 @@ pipeline {
         success {
             echo '=== CI PIPELINE EXECUTED SUCCESSFULLY ==='
             script {
-                // Rút gọn cú pháp gọi Slack, hệ thống tự động nhận diện thông số mạng Webhook
-                slackSend(channel: '#his-devops-alerts', color: 'good', message: "🟢 BÁO CÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] ĐÃ THÀNH CÔNG RỰC RỠ! Bộ quét tĩnh SonarQube đạt trạng thái Quality Gate Passed.")
+                slackSend(
+                    tokenCredentialId: env.SLACK_CREDENTIALS_ID,
+                    channel: env.SLACK_CHANNEL,
+                    color: 'good',
+                    message: "🟢 BÁO CÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] đã thành công. SonarQube đã hoàn tất quét mã nguồn. ${env.BUILD_URL}"
+                )
             }
         }
         failure {
             echo '=== CI PIPELINE FAILED AT SOME STAGES ==='
             script {
-                slackSend(channel: '#his-devops-alerts', color: 'danger', message: "🔴 CẢNH BÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] BỊ THẤT BẠI tại Stage: ${env.STAGE_NAME}. Vui lòng đối soát lại nhật ký Console Output.")
+                slackSend(
+                    tokenCredentialId: env.SLACK_CREDENTIALS_ID,
+                    channel: env.SLACK_CHANNEL,
+                    color: 'danger',
+                    message: "🔴 CẢNH BÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] thất bại. Vui lòng đối soát Console Output. ${env.BUILD_URL}"
+                )
             }
         }
     }
