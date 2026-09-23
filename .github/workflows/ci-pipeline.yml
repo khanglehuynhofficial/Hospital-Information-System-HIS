@@ -21,11 +21,11 @@ jobs:
 
     - name: Stage 2 - Build & Compile
       run: |
-        dotnet restore
-        dotnet build --configuration Release --no-restore
+        dotnet restore HisEmrService/HisEmrService.csproj
+        dotnet build HisEmrService/HisEmrService.csproj --configuration Release --no-restore
 
     - name: Stage 3 - Unit Test Execution
-      run: dotnet test --configuration Release --no-build /p:CollectCoverage=true
+      run: dotnet test HisEmrService/HisEmrService.csproj --configuration Release --no-build /p:CollectCoverage=true
 
     - name: Stage 4 - SonarQube Quality Scan
       run: echo "Executing static code analysis on SonarQube Cloud..."
