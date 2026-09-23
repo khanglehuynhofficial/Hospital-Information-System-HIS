@@ -37,6 +37,12 @@ pipeline {
                     trap 'status=$?; echo "BUILD SHELL EXIT CODE: $status"' EXIT
                     export DOTNET_CLI_TELEMETRY_OPTOUT=1
                     export DOTNET_NOLOGO=true
+                    export DOTNET_CLI_HOME="$WORKSPACE/.dotnet-home"
+                    export NUGET_PACKAGES="$WORKSPACE/.nuget/packages"
+                    export DOTNET_GCServer=0
+                    export DOTNET_GCHeapHardLimit=0x20000000
+                    export COMPlus_ReadyToRun=0
+                    mkdir -p "$DOTNET_CLI_HOME" "$NUGET_PACKAGES"
 
                     if ! command -v dotnet >/dev/null 2>&1 || ! dotnet --version >/dev/null 2>&1; then
                         if ! command -v curl >/dev/null 2>&1; then
@@ -57,8 +63,17 @@ pipeline {
 
                     echo "Using .NET SDK: $(dotnet --version)"
                     dotnet --info
-                    dotnet restore HisEmrService/HisEmrService.csproj --disable-parallel
-                    dotnet build HisEmrService/HisEmrService.csproj --configuration Release --no-restore -m:1
+                    rm -rf HisEmrService/bin HisEmrService/obj
+                    echo 'Restoring project dependencies...'
+                    dotnet restore HisEmrService/HisEmrService.csproj --disable-parallel --force
+                    echo 'Compiling project with one MSBuild node and no compiler server...'
+                    dotnet build HisEmrService/HisEmrService.csproj \
+                        --configuration Release \
+                        --no-restore \
+                        --nologo \
+                        -m:1 \
+                        -p:BuildInParallel=false \
+                        -p:UseSharedCompilation=false
                 '''
             }
         }
