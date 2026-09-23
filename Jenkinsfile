@@ -34,6 +34,7 @@ pipeline {
                 echo '=== STEP 2: BUILDING .NET PROJECT ==='
                 sh '''
                     set -eu
+                    trap 'status=$?; echo "BUILD SHELL EXIT CODE: $status"' EXIT
                     export DOTNET_CLI_TELEMETRY_OPTOUT=1
                     export DOTNET_NOLOGO=true
 
@@ -80,25 +81,33 @@ pipeline {
         success {
             echo '=== CI PIPELINE EXECUTED SUCCESSFULLY ==='
             script {
-                slackSend(
-                    tokenCredentialId: env.SLACK_CREDENTIALS_ID,
-                    channel: env.SLACK_CHANNEL,
-                    color: 'good',
-                    failOnError: false,
-                    message: "🟢 BÁO CÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] đã thành công. ${env.BUILD_URL}"
-                )
+                    try {
+                        slackSend(
+                            tokenCredentialId: env.SLACK_CREDENTIALS_ID,
+                            channel: env.SLACK_CHANNEL,
+                            color: 'good',
+                            failOnError: false,
+                            message: "🟢 BÁO CÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] đã thành công. ${env.BUILD_URL}"
+                        )
+                    } catch (err) {
+                        echo "Slack success notification failed: ${err.message}"
+                    }
             }
         }
         failure {
             echo '=== CI PIPELINE FAILED AT SOME STAGES ==='
             script {
-                slackSend(
-                    tokenCredentialId: env.SLACK_CREDENTIALS_ID,
-                    channel: env.SLACK_CHANNEL,
-                    color: 'danger',
-                    failOnError: false,
-                    message: "🔴 CẢNH BÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] thất bại. Vui lòng đối soát Console Output. ${env.BUILD_URL}"
-                )
+                try {
+                    slackSend(
+                        tokenCredentialId: env.SLACK_CREDENTIALS_ID,
+                        channel: env.SLACK_CHANNEL,
+                        color: 'danger',
+                        failOnError: false,
+                        message: "🔴 CẢNH BÁO: Luồng build ${env.JOB_NAME} [Số #${env.BUILD_NUMBER}] thất bại. Vui lòng đối soát Console Output. ${env.BUILD_URL}"
+                    )
+                } catch (err) {
+                    echo "Slack failure notification failed: ${err.message}"
+                }
             }
         }
     }
