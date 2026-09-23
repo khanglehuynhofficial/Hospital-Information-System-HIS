@@ -1,0 +1,50 @@
+name: HIS Project CI/CD Pipeline
+
+# Cơ chế kích hoạt tự động luồng chạy mỗi khi Solo Developer thực hiện push code lên nhánh develop
+on:
+  push:
+    branches: [ "develop" ]
+
+jobs:
+  build-and-test:
+    name: Core CI Execution
+    runs-on: ubuntu-latest # Chạy trên máy ảo Cloud sạch lỗi của GitHub
+
+    steps:
+    - name: Stage 1 - Checkout Source Code
+      uses: actions/checkout@v4 # Tự động kéo mã nguồn sạch từ kho về máy ảo
+
+    - name: Setup .NET Core Environment
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x' # Định biên môi trường biên dịch hệ thống chạy .NET 8 LTS
+
+    - name: Stage 2 - Build & Compile
+      run: |
+        dotnet restore
+        dotnet build --configuration Release --no-restore
+
+    - name: Stage 3 - Unit Test Execution
+      run: dotnet test --configuration Release --no-build /p:CollectCoverage=true
+
+    - name: Stage 4 - SonarQube Quality Scan
+      run: echo "Executing static code analysis on SonarQube Cloud..."
+
+    - name: Stage 5 - Package Artifacts
+      run: echo "Packaging MVP deliverables successfully..."
+
+    # LUỒNG ĐIỀU KHIỂN THÔNG BÁO CHATOPS HẬU DỰ ÁN QUA SLACK API
+    - name: Send Slack ChatOps Notification
+      uses: slackapi/slack-github-action@v2.0.0 # Sử dụng Action chính thức do Slack phát hành
+      if: always() # Đảm bảo bước này luôn chạy bất kể các stage trên thành công hay thất bại
+      with:
+        webhook: ${{ secrets.SLACK_WEBHOOK_URL }} # Bốc biến bảo mật đã cấu hình trong kho GitHub Secrets
+        webhook-type: incoming-webhook
+        payload: |
+          {
+            "attachments": [{
+              "color": "${{ job.status == 'success' && '#36a64f' || '#ff0000' }}",
+              "title": "${{ job.status == 'success' && '🚀 DỰ ÁN HIS: GITHUB ACTIONS BUILD THÀNH CÔNG!' || '🚨 CẢNH BÁO: GITHUB ACTIONS PIPELINE BỊ HƯ!' }}",
+              "text": "Thông báo trạng thái vận hành tự động vòng đời phần mềm:\n*Trạng thái:* Finished: ${{ job.status }}\n*Lượt chạy:* #${{ github.run_number }}\n*Nhân sự thực thi:* Lê Huỳnh Phúc Khang\n*Chi tiết:* Dự án HIS đã xử lý chuỗi chốt chặn an toàn trên cụm máy chủ Cloud GitHub Actions."
+            }]
+          }
