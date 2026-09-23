@@ -34,13 +34,17 @@ pipeline {
                 echo '=== STEP 2: BUILDING .NET PROJECT ==='
                 sh '''
                     set -eu
-                    if ! command -v dotnet >/dev/null 2>&1; then
+                    export DOTNET_CLI_TELEMETRY_OPTOUT=1
+                    export DOTNET_NOLOGO=true
+
+                    if ! command -v dotnet >/dev/null 2>&1 || ! dotnet --version >/dev/null 2>&1; then
                         if ! command -v curl >/dev/null 2>&1; then
                             echo 'ERROR: Jenkins agent has neither dotnet nor curl to install the .NET SDK.'
                             exit 127
                         fi
 
-                        echo 'The Jenkins agent has no dotnet command; installing the .NET 8 SDK in the workspace.'
+                        echo 'The Jenkins agent has no usable dotnet command; installing the .NET 8 SDK in the workspace.'
+                        rm -rf "$WORKSPACE/.dotnet"
                         mkdir -p "$WORKSPACE/.dotnet"
                         curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin \
                             --channel 8.0 \
@@ -51,8 +55,9 @@ pipeline {
                     fi
 
                     echo "Using .NET SDK: $(dotnet --version)"
-                    dotnet restore HisEmrService/HisEmrService.csproj
-                    dotnet build HisEmrService/HisEmrService.csproj --configuration Release --no-restore
+                    dotnet --info
+                    dotnet restore HisEmrService/HisEmrService.csproj --disable-parallel
+                    dotnet build HisEmrService/HisEmrService.csproj --configuration Release --no-restore -m:1
                 '''
             }
         }
